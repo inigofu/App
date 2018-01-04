@@ -119,16 +119,14 @@ func main() {
 		//gs := len(markets.Result) * 2
 		//wg.Add(gs)
 		getmarketsummaries()
-		concurrency := 15
+		concurrency := 50
 		sem := make(chan bool, concurrency)
 		for _, v := range markets.Result {
 			sem <- true
 			//getticker(v.MarketName)
 			go getorderbook(v.MarketName, sem)
 		}
-		for i := 0; i < cap(sem); i++ {
-			sem <- true
-		}
+
 		for _, v := range markets.Result {
 			sem <- true
 			//getticker(v.MarketName)
@@ -137,7 +135,9 @@ func main() {
 		}
 		for i := 0; i < cap(sem); i++ {
 			sem <- true
+
 		}
+		fmt.Println("Fin")
 		//wg.Wait()
 
 	}

@@ -72,6 +72,25 @@ type orderhistory struct {
 		OrderType string  `json:"OrderType"`
 	} `json:"result"`
 }
+type marketsummaries struct {
+	Success bool   `json:"success"`
+	Message string `json:"message"`
+	Result  []struct {
+		MarketName     string  `json:"MarketName"`
+		High           float64 `json:"High"`
+		Low            float64 `json:"Low"`
+		Volume         float64 `json:"Volume"`
+		Last           float64 `json:"Last"`
+		BaseVolume     float64 `json:"BaseVolume"`
+		TimeStamp      string  `json:"TimeStamp"`
+		Bid            float64 `json:"Bid"`
+		Ask            float64 `json:"Ask"`
+		OpenBuyOrders  int     `json:"OpenBuyOrders"`
+		OpenSellOrders int     `json:"OpenSellOrders"`
+		PrevDay        float64 `json:"PrevDay"`
+		Created        string  `json:"Created"`
+	} `json:"result"`
+}
 
 var wg sync.WaitGroup
 var db *sql.DB
@@ -97,11 +116,12 @@ func main() {
 		fmt.Printf("test error %v\n", err)
 	} else {
 
-		gs := len(markets.Result) * 3
+		gs := len(markets.Result) * 2
 		wg.Add(gs)
+		getmarketsummaries()
 		for _, v := range markets.Result {
 
-			go getticker(v.MarketName)
+			//getticker(v.MarketName)
 			go getorderbook(v.MarketName)
 			go getorderhistory(v.MarketName)
 		}
@@ -158,11 +178,11 @@ func getticker(market string) {
 			fmt.Println(url, err)
 
 		} else {
-			//fmt.Println(url, "ticket save to bd", market)
+			fmt.Println(url, "ticket save to bd", market)
 		}
 
 	}
-	wg.Done()
+	//wg.Done()
 
 }
 func getorderbook(market string) {
@@ -221,10 +241,63 @@ func getorderbook(market string) {
 			wg.Done()
 			return
 		}
-		//fmt.Println(url, "orderbook save to bd", market)
+		fmt.Println(url, "orderbook save to bd", market)
 
 	}
 	wg.Done()
+
+}
+
+func getmarketsummaries() {
+	url := "https://bittrex.com/api/v1.1/public/getmarketsummaries"
+
+	var tmp marketsummaries
+	//fmt.Println(url)
+	err := getjson(url, &tmp)
+	if err != nil {
+		fmt.Println(url, err)
+	} else {
+
+		txn, err := db.Begin()
+		if err != nil {
+			fmt.Println(url, err)
+		}
+
+		stmt, err := txn.Prepare(pq.CopyIn("marketsummaries", "ask", "basevolume", "bid", "created", "high", "last", "low", "market", "openbuyorders", "opensellorders", "prevday", "date"))
+		defer stmt.Close()
+		if err != nil {
+			fmt.Println(url, err)
+			wg.Done()
+			return
+		}
+
+		for _, book := range tmp.Result {
+			_, err = stmt.Exec(book.Ask, book.BaseVolume, book.Bid, book.Created, book.High, book.Last, book.Low, book.MarketName, book.OpenBuyOrders, book.OpenSellOrders, book.PrevDay, book.TimeStamp)
+			if err != nil {
+				fmt.Println(url, err)
+				wg.Done()
+				return
+			}
+		}
+
+		_, err = stmt.Exec()
+		if err != nil {
+			fmt.Println(url, err)
+			wg.Done()
+			return
+		}
+
+		err = txn.Commit()
+
+		if err != nil {
+			fmt.Println(url, err)
+			wg.Done()
+			return
+		}
+		fmt.Println(url, "getmarketsummaries save to bd")
+
+	}
+	//wg.Done()
 
 }
 
@@ -303,7 +376,7 @@ func getorderhistory(market string) {
 			wg.Done()
 			return
 		}
-		//fmt.Println(url, "tmporderhistory save to bd", market)
+		fmt.Println(url, "tmporderhistory save to bd", market)
 
 	}
 	wg.Done()

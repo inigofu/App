@@ -116,16 +116,29 @@ func main() {
 		fmt.Printf("test error %v\n", err)
 	} else {
 
-		gs := len(markets.Result) * 2
-		wg.Add(gs)
+		//gs := len(markets.Result) * 2
+		//wg.Add(gs)
 		getmarketsummaries()
+		concurrency := 15
+		sem := make(chan bool, concurrency)
 		for _, v := range markets.Result {
-
+			sem <- true
 			//getticker(v.MarketName)
-			go getorderbook(v.MarketName)
-			go getorderhistory(v.MarketName)
+			go getorderbook(v.MarketName, sem)
 		}
-		wg.Wait()
+		for i := 0; i < cap(sem); i++ {
+			sem <- true
+		}
+		for _, v := range markets.Result {
+			sem <- true
+			//getticker(v.MarketName)
+
+			go getorderhistory(v.MarketName, sem)
+		}
+		for i := 0; i < cap(sem); i++ {
+			sem <- true
+		}
+		//wg.Wait()
 
 	}
 }
@@ -185,7 +198,8 @@ func getticker(market string) {
 	//wg.Done()
 
 }
-func getorderbook(market string) {
+func getorderbook(market string, sem <-chan bool) {
+	defer func() { <-sem }()
 	url := "https://bittrex.com/api/v1.1/public/getorderbook?market=" + market + "&type=both"
 
 	var tmporderbook orderbook
@@ -244,11 +258,12 @@ func getorderbook(market string) {
 		fmt.Println(url, "orderbook save to bd", market)
 
 	}
-	wg.Done()
+	//wg.Done()
 
 }
 
 func getmarketsummaries() {
+
 	url := "https://bittrex.com/api/v1.1/public/getmarketsummaries"
 
 	var tmp marketsummaries
@@ -301,7 +316,8 @@ func getmarketsummaries() {
 
 }
 
-func getorderhistory(market string) {
+func getorderhistory(market string, sem <-chan bool) {
+	defer func() { <-sem }()
 	url := "https://bittrex.com/api/v1.1/public/getmarkethistory?market=" + market
 
 	var tmporderhistory orderhistory
@@ -379,6 +395,6 @@ func getorderhistory(market string) {
 		fmt.Println(url, "tmporderhistory save to bd", market)
 
 	}
-	wg.Done()
+	//wg.Done()
 
 }

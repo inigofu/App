@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"sync"
 	"time"
@@ -110,8 +111,18 @@ func main() {
 }
 
 func getjson(url string, result interface{}) error {
-
-	resp, err := http.Get(url)
+	t := &http.Transport{
+		Dial: (&net.Dialer{
+			Timeout:   60 * time.Second,
+			KeepAlive: 30 * time.Second,
+		}).Dial,
+		// We use ABSURDLY large keys, and should probably not.
+		TLSHandshakeTimeout: 60 * time.Second,
+	}
+	c := &http.Client{
+		Transport: t,
+	}
+	resp, err := c.Get(url)
 	if err != nil {
 		return fmt.Errorf("cannot fetch URL %q: %v", url, err)
 	}

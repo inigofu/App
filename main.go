@@ -119,7 +119,7 @@ func main() {
 		//gs := len(markets.Result) * 2
 		//wg.Add(gs)
 		getmarketsummaries()
-		concurrency := 15
+		concurrency := 10
 		sem := make(chan bool, concurrency)
 		for _, v := range markets.Result {
 			sem <- true

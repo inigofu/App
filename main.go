@@ -97,7 +97,7 @@ var db *sql.DB
 
 func init() {
 	var err error
-	db, err = sql.Open("postgres", "postgres://broker:password@192.168.1.52/inversion?sslmode=disable")
+	db, err = sql.Open("postgres", "postgres://broker:password@localhost/inversion?sslmode=disable")
 	if err != nil {
 		panic(err)
 	}
@@ -119,7 +119,7 @@ func main() {
 		//gs := len(markets.Result) * 2
 		//wg.Add(gs)
 		getmarketsummaries()
-		concurrency := 10
+		concurrency := 1024
 		sem := make(chan bool, concurrency)
 		for _, v := range markets.Result {
 			sem <- true

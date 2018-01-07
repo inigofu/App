@@ -137,7 +137,7 @@ func forgetbookorder(markets market) {
 			//getticker(v.MarketName)
 			go getorderbook(v.MarketName, sem)
 		}
-		timer1 := time.NewTimer(time.Second * 1)
+		timer1 := time.NewTimer(time.Second * 2)
 		<-timer1.C
 	}
 	for i := 0; i < cap(sem); i++ {

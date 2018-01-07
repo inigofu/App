@@ -131,10 +131,14 @@ func main() {
 func forgetbookorder(markets market) {
 	concurrency := 10
 	sem := make(chan bool, concurrency)
-	for _, v := range markets.Result {
-		sem <- true
-		//getticker(v.MarketName)
-		go getorderbook(v.MarketName, sem)
+	for {
+		for _, v := range markets.Result {
+			sem <- true
+			//getticker(v.MarketName)
+			go getorderbook(v.MarketName, sem)
+		}
+		timer1 := time.NewTimer(time.Second * 1)
+		<-timer1.C
 	}
 	for i := 0; i < cap(sem); i++ {
 		sem <- true
@@ -146,11 +150,16 @@ func forgetorderhistory(markets market) {
 	concurrency := 10
 	sem := make(chan bool, concurrency)
 	println("forgetorderhistory")
-	for _, v := range markets.Result {
-		sem <- true
-		//getticker(v.MarketName)
+	for {
+		for _, v := range markets.Result {
+			sem <- true
+			//getticker(v.MarketName)
 
-		go getorderhistory(v.MarketName, sem)
+			go getorderhistory(v.MarketName, sem)
+		}
+		println("fin forgetorderhistory")
+		timer1 := time.NewTimer(time.Second * 90)
+		<-timer1.C
 	}
 	for i := 0; i < cap(sem); i++ {
 		sem <- true

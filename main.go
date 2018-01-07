@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"net"
 	"net/http"
 	"sync"
 	"time"
@@ -137,7 +136,7 @@ func forgetbookorder(markets market) {
 			//getticker(v.MarketName)
 			go getorderbook(v.MarketName, sem)
 		}
-		timer1 := time.NewTimer(time.Second * 2)
+		timer1 := time.NewTimer(time.Second * 1)
 		<-timer1.C
 	}
 	for i := 0; i < cap(sem); i++ {
@@ -169,18 +168,8 @@ func forgetorderhistory(markets market) {
 }
 
 func getjson(url string, result interface{}) error {
-	t := &http.Transport{
-		Dial: (&net.Dialer{
-			Timeout:   60 * time.Second,
-			KeepAlive: 30 * time.Second,
-		}).Dial,
-		// We use ABSURDLY large keys, and should probably not.
-		TLSHandshakeTimeout: 60 * time.Second,
-	}
-	c := &http.Client{
-		Transport: t,
-	}
-	resp, err := c.Get(url)
+
+	resp, err := http.Get(url)
 	if err != nil {
 		return fmt.Errorf("cannot fetch URL %q: %v", url, err)
 	}

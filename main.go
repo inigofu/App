@@ -117,30 +117,46 @@ func main() {
 	} else {
 
 		//gs := len(markets.Result) * 2
-		//wg.Add(gs)
+		wg.Add(2)
 		getmarketsummaries()
-		concurrency := 1024
-		sem := make(chan bool, concurrency)
-		for _, v := range markets.Result {
-			sem <- true
-			//getticker(v.MarketName)
-			go getorderbook(v.MarketName, sem)
-		}
 
-		for _, v := range markets.Result {
-			sem <- true
-			//getticker(v.MarketName)
+		go forgetbookorder(markets)
+		go forgetorderhistory(markets)
 
-			go getorderhistory(v.MarketName, sem)
-		}
-		for i := 0; i < cap(sem); i++ {
-			sem <- true
-
-		}
+		wg.Wait()
 		fmt.Println("Fin")
-		//wg.Wait()
 
 	}
+}
+func forgetbookorder(markets market) {
+	concurrency := 10
+	sem := make(chan bool, concurrency)
+	for _, v := range markets.Result {
+		sem <- true
+		//getticker(v.MarketName)
+		go getorderbook(v.MarketName, sem)
+	}
+	for i := 0; i < cap(sem); i++ {
+		sem <- true
+
+	}
+	wg.Done()
+}
+func forgetorderhistory(markets market) {
+	concurrency := 10
+	sem := make(chan bool, concurrency)
+	println("forgetorderhistory")
+	for _, v := range markets.Result {
+		sem <- true
+		//getticker(v.MarketName)
+
+		go getorderhistory(v.MarketName, sem)
+	}
+	for i := 0; i < cap(sem); i++ {
+		sem <- true
+
+	}
+	wg.Done()
 }
 
 func getjson(url string, result interface{}) error {

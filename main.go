@@ -117,7 +117,6 @@ func main() {
 
 		//gs := len(markets.Result) * 2
 		wg.Add(2)
-		getmarketsummaries()
 
 		go forgetbookorder(markets)
 		go forgetorderhistory(markets)
@@ -131,6 +130,7 @@ func forgetbookorder(markets market) {
 	concurrency := 10
 	sem := make(chan bool, concurrency)
 	for {
+		getmarketsummaries()
 		for _, v := range markets.Result {
 			sem <- true
 			//getticker(v.MarketName)
